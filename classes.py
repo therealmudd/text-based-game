@@ -1,11 +1,24 @@
 import re
 import os
 from console import Console
-from config import locations, items, combinations
+from config import locations, game_map, game_map_key, items, combinations
 from typing import Any
 import math
 
 console = Console()
+
+class Position:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    @staticmethod
+    def from_direction(position, direction: tuple[int, int]):
+        return Position(position.x + direction[0], position.y + direction[1])
+    
+    def xy(self):
+        return self.x, self.y
+
 
 class Item:
     def __init__(self, item_name, item_config):
@@ -85,7 +98,8 @@ class Actions:
     def _set_actions(self):
         self.actions = {
             r"^look around$": self.do_look_around,
-            r"^go to (\w+)$": self.do_go_to,
+            # r"^go to (\w+)$": self.do_go_to,
+            r"^(go|walk|travel) (\w+)$": self.do_travel,
             r"^gather (\w+)( from (\w+))?$": self.do_gather,
             r"^inventory$": self.do_inventory,
             r"^combine (\w+) (with|and) (\w+)$": self.do_combine,
@@ -103,6 +117,26 @@ class Actions:
     def do_look_around(self, *args):
         console.print(self.player.location.description)
         console.print(self.player.location.details)
+
+    def do_travel(self, *args):
+        directions = {
+            "north": (-1, 0),
+            "south": (1, 0),
+            "east": (0, 1),
+            "west": (0, -1),
+        }
+        direction = args[1]
+        if direction not in directions:
+            console.print("I can't go that way.")
+            return
+
+        new_pos = Position.from_direction(self.player.position, directions[direction])
+        if not self.player.world.map.is_valid_position(new_pos):
+            console.print("I can't go that way.")
+            return
+        self.player.position = new_pos
+        self.player.location = self.player.world.map.location_at_position(new_pos)
+        console.print(self.player.location.description)
 
     def do_go_to(self, *args):
         location_name = args[0]
@@ -197,18 +231,18 @@ class Actions:
             self.player.inventory.drop(item_name2)
             self.player.inventory.add(Item(result, item_config=items))
 
-
 class Player:
     def __init__(self, world):
-        self.location: Location = None
+        self.position: Position = Position(7, 6)
         self.actions: Actions = Actions(self)
         self.world: World = world
+        self.location: Location = None
         self.inventory: Inventory = Inventory()
         self.statuses: dict[str, Status] = {}
         self.experience = 0
 
-    def set_location(self, location):
-        self.location = location
+    def set_location(self):
+        self.location = self.world.map.location_at_position(self.position)
 
     def add_status(self, status_name, duration=1, degree=1):
         if status_name in self.statuses:
@@ -224,22 +258,43 @@ class Player:
                 del self.statuses[status_name]
 
 
-class World:
-    def __init__(self):
-        self.locations: list[Location] = []
+class Map:
+    def __init__(self, data, key):
+        self.data: list[list[str]] = data
+        self.key = key
+        self.width = len(self.data[0])
+        self.height = len(self.data)
+        self.locations = []
         self.add_locations(locations, items)
-        self.player: Player = None
     
     def add_locations(self, locations: dict[str, str], items: dict[str, Any]):
         for location_name, location_config in locations.items():
             new_location = Location(location_name, location_config, items)
             self.locations.append(new_location)
 
+    def is_valid_position(self, position: Position):
+        x, y = position.xy()
+        return 0 <= x <= self.width and 0 <= y <= self.height
+    
     def find_location(self, name):
         for location in self.locations:
             if location.name == name:
                 return location
         return None
+    
+    def location_at_position(self, position: Position):
+        x, y = position.xy()
+        return self.find_location(self.key[self.data[y][x]])
+
+class World:
+    def __init__(self):
+        self.locations: list[Location] = []
+        self.player: Player = None
+        self.map: Map = None
+
+    def generate_map(self, game_map_string: str, game_map_key):
+        map_data = [list(line) for line in game_map_string.split("\n")]
+        self.map = Map(map_data, game_map_key)
             
     def parse_input(self, input_string: str):
         console.print(">", input_string)

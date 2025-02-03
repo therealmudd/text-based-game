@@ -2,9 +2,10 @@ from classes import *
 
 # Setup
 world = World()
+world.generate_map(game_map, game_map_key)
 
 player = Player(world)
-player.set_location(world.find_location("beach"))
+player.set_location()
 world.player = player
 
 

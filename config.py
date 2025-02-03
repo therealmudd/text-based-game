@@ -1,7 +1,25 @@
+game_map = '''\
+wwwwwwwwwwwww
+wbbbbbbbbbbbw
+wbbbbbbffbbbw
+wbbffffcfbbbw
+wbbffcfffbbbw
+wbbffffffbbbw
+wbbbbbbffbbbw
+wbbbbbbbbbbbw
+wwwwwwwwwwwww'''
+
+game_map_key = {
+    "w": "water",
+    "b": "beach",
+    "f": "forest",
+    "c": "cave"
+}
+
 locations = {
     "beach": {
         "description": "You are on the beach.",
-        "details": "You see the ocean, the shore and trees in north",
+        "details": "You see the ocean and the shore.",
         "items": [
             "water",
             "rock",
@@ -13,7 +31,7 @@ locations = {
     },
     "forest": {
         "description": "You are in the forest.",
-        "details": "You see trees in all directions and beach is south",
+        "details": "You see trees in all directions.",
         "items": [
             "rock",
             "wood",
@@ -21,6 +39,22 @@ locations = {
             "leaf",
             "dirt",
             "grass"
+        ]
+    },
+    "cave": {
+        "description": "You are in the cave.",
+        "details": "You see a stone and some ores.",
+        "items": [
+            "stone",
+            "iron ore",
+        ]
+    },
+    "water": {
+        "description": "You are in the water.",
+        "details": "You see some fish swimming.",
+        "items": [
+            "fish",
+            "rock"
         ]
     }
 }
@@ -48,14 +82,15 @@ items = {
     "dirt": {},
     "grass": {"edibility": -2.1},
     "axe": {"stacks": False},
-    "long_stick": {},
+    "long stick": {},
     "vine": {},
-    "bucket": {"stacks": False}
+    "bucket": {"stacks": False},
+    "iron ore": {"needs": "pickaxe"},
 }
 
 combinations = {
     "stick+stone": "axe",
-    "stick+stick": "long_stick",
+    "stick+stick": "long stick",
     "grass+grass": "vine",
     "stone+stone": "bucket"
 }
